@@ -1,0 +1,35 @@
+[package]
+name = "git-stub-types"
+version = "0.1.0"
+description = "TODO: fill in"
+readme = "README.md"
+documentation = "https://docs.rs/git-stub-types"
+repository.workspace = true
+keywords = []
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+workspace = true
+
+[package.metadata.cargo-sync-rdme.badge.badges]
+license = true
+crates-io = true
+docs-rs = true
+rust-version = true
+
+[dependencies]
+
+[dev-dependencies]
+
+[package.metadata.release]
+pre-release-replacements = [
+    { file="../../CHANGELOG.md", search="Unreleased", replace="[{{version}}]", min=1 },
+    { file="../../CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1 },
+    { file="../../CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## Unreleased - ReleaseDate\n", exactly=1 },
+    { file="../../CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[{{version}}]: https://github.com/oxidecomputer/git-stub/releases/tag/git-stub-types-{{version}}", exactly=1},
+]

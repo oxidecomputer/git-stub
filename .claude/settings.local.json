@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo nextest run:*)",
+      "Bash(cargo search:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(jj diff:*)",
+      "Bash(python3:*)",
+      "Bash(cargo xfmt:*)",
+      "Bash(cargo build:*)",
+      "Bash(jj log:*)",
+      "Bash(jj split:*)",
+      "Bash(jj describe:*)",
+      "Bash(cargo check:*)"
+    ]
+  }
+}
