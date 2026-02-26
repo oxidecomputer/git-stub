@@ -1,11 +1,14 @@
 // Copyright 2026 Oxide Computer Company
 
+// This line is automatically updated by cargo-release.
+#![doc(html_root_url = "https://docs.rs/git-stub-vcs/0.1.0")]
+
 //! VCS abstraction and materialization for git stubs.
 //!
-//! A *git stub* (e.g., `foo.json.gitstub`) contains a reference to a file
-//! stored in Git history, in the format `commit:path`. This crate provides
-//! a VCS abstraction for reading file contents from history, and helpers to
-//! materialize these references into actual files.
+//! A [`GitStub`](git_stub::GitStub) (e.g., `foo.json.gitstub`) contains a
+//! reference to a file stored in Git history, in the format `commit:path`. This
+//! crate provides a VCS abstraction for reading file contents from history, and
+//! helpers to materialize these references into actual files.
 //!
 //! # Usage in build scripts
 //!

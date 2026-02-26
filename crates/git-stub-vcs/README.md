@@ -10,10 +10,10 @@
 <!-- cargo-sync-rdme rustdoc [[ -->
 VCS abstraction and materialization for git stubs.
 
-A *git stub* (e.g., `foo.json.gitstub`) contains a reference to a file
-stored in Git history, in the format `commit:path`. This crate provides
-a VCS abstraction for reading file contents from history, and helpers to
-materialize these references into actual files.
+A [`GitStub`](https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html) (e.g., `foo.json.gitstub`) contains a
+reference to a file stored in Git history, in the format `commit:path`. This
+crate provides a VCS abstraction for reading file contents from history, and
+helpers to materialize these references into actual files.
 
 ## Usage in build scripts
 

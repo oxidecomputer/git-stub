@@ -1,5 +1,8 @@
 // Copyright 2026 Oxide Computer Company
 
+// This line is automatically updated by cargo-release.
+#![doc(html_root_url = "https://docs.rs/git-stub/1.0.0")]
+
 //! Parsing types for Git stubs.
 //!
 //! A *Git stub* (e.g., `foo.json.gitstub`) contains a reference to a file
