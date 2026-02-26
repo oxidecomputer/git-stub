@@ -21,10 +21,10 @@ rustdoc *args:
 generate-readmes:
     cargo sync-rdme --toolchain nightly-2025-08-31 --workspace --all-features
 
-# Run cargo release in CI.
-ci-cargo-release:
+# Run cargo release in CI for a specific crate.
+ci-cargo-release crate:
     # cargo-release requires a release off a branch.
     git checkout -B to-release
-    cargo release publish --publish --execute --no-confirm --workspace
+    cargo release publish --publish --execute --no-confirm -p {{crate}}
     git checkout -
     git branch -D to-release

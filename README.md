@@ -1,1 +1,1 @@
-crates/git-stub-types/README.md
+crates/git-stub/README.md

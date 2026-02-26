@@ -1,0 +1,43 @@
+[package]
+name = "git-stub-vcs"
+version = "0.1.0"
+description = "VCS abstraction and materialization for git stubs"
+readme = "README.md"
+documentation = "https://docs.rs/git-stub-vcs"
+repository.workspace = true
+keywords = []
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+workspace = true
+
+[package.metadata.cargo-sync-rdme.badge.badges]
+license = true
+crates-io = true
+docs-rs = true
+rust-version = true
+
+[dependencies]
+atomicwrites.workspace = true
+camino.workspace = true
+fs-err.workspace = true
+git-stub.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+camino-tempfile.workspace = true
+
+[package.metadata.release]
+tag-name = "git-stub-vcs-{{version}}"
+pre-release-replacements = [
+    { file="CHANGELOG.md", search="Unreleased", replace="[{{version}}]", min=1 },
+    { file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1 },
+    { file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## Unreleased - ReleaseDate\n", exactly=1 },
+    { file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[{{version}}]: https://github.com/oxidecomputer/git-stub/releases/tag/git-stub-vcs-{{version}}", exactly=1},
+]
