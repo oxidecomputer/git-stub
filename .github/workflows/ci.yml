@@ -44,8 +44,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        # 1.88 is the MSRV.
-        rust-version: ["1.88", "stable"]
+        # 1.85 is the MSRV.
+        rust-version: ["1.85", "stable"]
       fail-fast: false
     env:
       RUSTFLAGS: -D warnings
@@ -58,6 +58,9 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@just
       - uses: taiki-e/install-action@nextest
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: jj-cli
       - name: Build
         run: just powerset build
       - name: Run tests
