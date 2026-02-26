@@ -233,10 +233,12 @@ pub enum MaterializeError {
     /// The repository is a shallow clone.
     #[error(
         "shallow clone detected at {repo_root}: cannot dereference \
-         git stubs without full history \
-         (run `git fetch --unshallow`)"
+         git stubs without full history{}", shallow_clone_msg(.vcs),
     )]
     ShallowClone {
+        /// The VCS detected.
+        vcs: VcsName,
+
         /// The repository root.
         repo_root: Utf8PathBuf,
     },
@@ -260,6 +262,16 @@ pub enum MaterializeError {
         #[source]
         error: AtomicWriteError,
     },
+}
+
+fn shallow_clone_msg(vcs: &VcsName) -> &'static str {
+    match vcs {
+        VcsName::Git => "(run `git fetch --unshallow`)",
+        VcsName::Jj => {
+            "(if this is a colocated repository, \
+              run `git fetch --unshallow`)"
+        }
+    }
 }
 
 /// An error that occurred during an atomic file write.

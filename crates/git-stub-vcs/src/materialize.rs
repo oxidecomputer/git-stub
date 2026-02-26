@@ -146,6 +146,7 @@ impl Materializer {
             }
         })? {
             return Err(MaterializeError::ShallowClone {
+                vcs: vcs.name(),
                 repo_root: repo_root.to_owned(),
             });
         }
