@@ -4,10 +4,35 @@
 
 use crate::{MaterializeError, Vcs};
 use atomicwrites::AtomicFile;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::{Utf8Component, Utf8Path, Utf8PathBuf};
 use fs_err as fs;
 use git_stub::GitStub;
 use std::io::Write;
+
+/// Returns the first non-normal component in the path, if any.
+///
+/// A normal component is a plain file or directory name (not `..`, `.`,
+/// root `/`, or a Windows prefix).
+fn find_non_normal_component(path: &Utf8Path) -> Option<String> {
+    path.components().find_map(|component| match component {
+        Utf8Component::Normal(_) => None,
+        Utf8Component::Prefix(_)
+        | Utf8Component::RootDir
+        | Utf8Component::CurDir
+        | Utf8Component::ParentDir => Some(component.as_str().to_owned()),
+    })
+}
+
+/// Returns an error if `path` contains any non-normal component.
+fn check_path(path: &Utf8Path) -> Result<(), MaterializeError> {
+    if let Some(component) = find_non_normal_component(path) {
+        return Err(MaterializeError::InvalidPathComponent {
+            path: path.to_owned(),
+            component,
+        });
+    }
+    Ok(())
+}
 
 /// Materializes git stubs into actual file content.
 ///
@@ -151,6 +176,8 @@ impl Materializer {
     ) -> Result<Utf8PathBuf, MaterializeError> {
         let git_stub_path = git_stub_path.as_ref();
 
+        check_path(git_stub_path)?;
+
         if git_stub_path.extension() != Some("gitstub") {
             return Err(MaterializeError::NotGitStub {
                 path: git_stub_path.to_owned(),
@@ -168,24 +195,19 @@ impl Materializer {
     /// Materializes a git stub to a specific path.
     ///
     /// Like [`materialize`](Self::materialize), but writes to `output_path`
-    /// (relative to the output directory) instead of deriving the path from
-    /// the Git stub file name.
+    /// (relative to the output directory, or absolute) instead of deriving the
+    /// path from the Git stub file name.
     ///
     /// `git_stub_path` is relative to the repository root.
-    ///
-    /// # Path handling
-    ///
-    /// `output_path` is joined to the output directory. If `output_path`
-    /// is absolute, it replaces the output directory entirely (this is
-    /// standard [`Utf8PathBuf::join`] behavior). Callers should ensure
-    /// `output_path` is relative to avoid writing outside the output
-    /// directory.
     pub fn materialize_to(
         &self,
         git_stub_path: impl AsRef<Utf8Path>,
         output_path: impl AsRef<Utf8Path>,
     ) -> Result<(), MaterializeError> {
         let git_stub_path = git_stub_path.as_ref();
+        let output_path = output_path.as_ref();
+
+        check_path(git_stub_path)?;
 
         if git_stub_path.extension() != Some("gitstub") {
             return Err(MaterializeError::NotGitStub {
@@ -193,7 +215,7 @@ impl Materializer {
             });
         }
 
-        let output_path = self.output_dir.join(output_path.as_ref());
+        let output_path = self.output_dir.join(output_path);
         self.materialize_inner(git_stub_path, &output_path)
     }
 

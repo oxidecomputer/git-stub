@@ -169,6 +169,22 @@ pub enum ReadContentsError {
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum MaterializeError {
+    /// A path argument contains a non-normal component (e.g., `..`,
+    /// `.`, `/`, or a Windows prefix).
+    ///
+    /// Only relative paths with plain file and directory names are accepted.
+    #[error(
+        "path {path:?} contains non-normal component {component:?} \
+         (only plain file/directory names are allowed)"
+    )]
+    InvalidPathComponent {
+        /// The full path that failed validation.
+        path: Utf8PathBuf,
+        /// The non-normal component that was found (e.g., `..`, `.`,
+        /// `/`).
+        component: String,
+    },
+
     /// The path does not have a `.gitstub` extension.
     #[error("path does not end with .gitstub: {path}")]
     NotGitStub {

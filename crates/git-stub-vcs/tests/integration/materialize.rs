@@ -766,3 +766,93 @@ fn test_read_contents_spawn_failure() -> Result<()> {
 
     Ok(())
 }
+
+// --- git_stub_path validation tests ---
+
+#[test]
+fn test_materialize_rejects_absolute_git_stub_path() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result = materializer.materialize("/etc/api.json.gitstub");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject absolute git_stub_path, got: {result:?}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_materialize_rejects_parent_dir_git_stub_path() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result = materializer.materialize("../escape/api.json.gitstub");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject git_stub_path with .., got: {result:?}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_materialize_rejects_curdir_git_stub_path() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result = materializer.materialize("./openapi/api.json.gitstub");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject git_stub_path with ., got: {result:?}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_materialize_to_rejects_absolute_git_stub_path() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result =
+        materializer.materialize_to("/etc/api.json.gitstub", "output.json");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject absolute git_stub_path, got: {result:?}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_materialize_to_rejects_parent_dir_git_stub_path() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result =
+        materializer.materialize_to("../../api.json.gitstub", "output.json");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject git_stub_path with .., got: {result:?}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_materialize_rejects_embedded_parent_dir() -> Result<()> {
+    let (temp, _) = setup_git_repo()?;
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+
+    let result =
+        materializer.materialize("openapi/../../escape/api.json.gitstub");
+    assert!(
+        matches!(result, Err(MaterializeError::InvalidPathComponent { .. })),
+        "should reject git_stub_path with embedded .., \
+         got: {result:?}"
+    );
+
+    Ok(())
+}
