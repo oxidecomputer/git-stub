@@ -172,8 +172,9 @@ impl Vcs {
     /// Checks if the repository at `repo_root` is a shallow clone.
     ///
     /// For Git, runs `git rev-parse --is-shallow-repository`.
-    /// For Jujutsu, always returns `Ok(false)` (jj doesn't have shallow
-    /// clones).
+    /// For Jujutsu, resolves the underlying Git store using
+    /// `jj git root --ignore-working-copy` and checks for a `shallow`
+    /// marker file there.
     pub fn is_shallow_clone(
         &self,
         repo_root: &Utf8Path,
@@ -210,8 +211,42 @@ impl Vcs {
                     })
                 }
             }
-            // Jujutsu doesn't have shallow clones.
-            VcsKind::Jj { .. } => Ok(false),
+            VcsKind::Jj { binary } => {
+                let output = Command::new(binary)
+                    .current_dir(repo_root)
+                    .args(["git", "root", "--ignore-working-copy"])
+                    .output()
+                    .map_err(|source| ShallowCloneError::SpawnFailed {
+                        vcs_name: VcsName::Jj,
+                        binary_path: binary.clone(),
+                        repo_root: repo_root.to_owned(),
+                        source,
+                    })?;
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    return Err(ShallowCloneError::VcsFailed {
+                        vcs_name: VcsName::Jj,
+                        exit_status: output.status.to_string(),
+                        stderr: stderr.trim().to_string(),
+                    });
+                }
+
+                let git_root = String::from_utf8_lossy(&output.stdout);
+                let git_root = git_root.trim();
+                if git_root.is_empty() {
+                    return Err(ShallowCloneError::UnexpectedOutput {
+                        vcs_name: VcsName::Jj,
+                        stdout: git_root.to_string(),
+                    });
+                }
+
+                let shallow_path =
+                    camino::Utf8PathBuf::from(git_root).join("shallow");
+                shallow_path.try_exists().map_err(|source| {
+                    ShallowCloneError::Io { path: shallow_path.clone(), source }
+                })
+            }
         }
     }
 
@@ -245,8 +280,10 @@ impl Vcs {
                     "--ignore-working-copy",
                     "--revision",
                     &stub.commit().to_string(),
-                    stub.path().as_str(),
                 ]);
+                // `--` is required so filenames beginning with `-` are
+                // treated as paths rather than options.
+                cmd.arg("--").arg(stub.path().as_str());
             }
         }
 

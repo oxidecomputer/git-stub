@@ -94,8 +94,8 @@ impl Materializer {
     /// Use this when you want to force a specific VCS instead of relying on
     /// automatic detection.
     ///
-    /// Returns an error if the repository is a shallow clone under the new
-    /// VCS.
+    /// Returns an error if shallow-clone checking fails, or if the repository
+    /// is shallow under the new VCS.
     pub fn with_vcs(mut self, vcs: Vcs) -> Result<Self, MaterializeError> {
         Self::check_shallow(&vcs, &self.repo_root)?;
         self.vcs = vcs;

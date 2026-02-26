@@ -274,8 +274,12 @@ fn test_vcs_detection_git_only() -> Result<()> {
 #[test]
 fn test_vcs_detection_with_jj_dir() -> Result<()> {
     let (temp, _) = setup_git_repo()?;
-    // Add a .jj directory to simulate colocated mode.
-    fs::create_dir(temp.path().join(".jj"))?;
+    // Initialize a real colocated jj repo so `.jj` is valid.
+    let status = jj_command()
+        .args(["git", "init", "--git-repo", ".", "."])
+        .current_dir(temp.path())
+        .status()?;
+    assert!(status.success(), "jj git init --git-repo . . failed");
 
     let materializer = Materializer::standard(temp.path(), temp.path())?;
     assert_eq!(
@@ -304,13 +308,11 @@ fn test_vcs_detection_no_repo() -> Result<()> {
 #[test]
 fn test_with_vcs_override() -> Result<()> {
     let (temp, _) = setup_git_repo()?;
-    let materializer = Materializer::standard(temp.path(), temp.path())?
-        .with_vcs(Vcs::jj()?)?;
-
-    assert_eq!(
-        materializer.vcs().name(),
-        VcsName::Jj,
-        "with_vcs should override detection"
+    let materializer = Materializer::standard(temp.path(), temp.path())?;
+    let result = materializer.with_vcs(Vcs::jj()?);
+    assert!(
+        matches!(result, Err(MaterializeError::ShallowCloneCheck { .. })),
+        "forcing jj in a non-jj repo should fail shallow-check setup"
     );
 
     Ok(())
@@ -522,6 +524,73 @@ fn test_materialize_shallow_clone_rejected() -> Result<()> {
 }
 
 #[test]
+fn test_materialize_shallow_jj_clone_rejected() -> Result<()> {
+    if !check_jj_available()? {
+        eprintln!("jj tests skipped (SKIP_JJ_TESTS set)");
+        return Ok(());
+    }
+
+    // Use a temp jj config dir in tests to avoid depending on host-level
+    // config path permissions.
+    let jj_config = Utf8TempDir::with_prefix("git-stub-jj-config-")?;
+    // SAFETY: nextest runs each test in a separate process.
+    // See https://nexte.st/docs/configuration/env-vars/#altering-the-environment-within-tests
+    unsafe {
+        std::env::set_var("XDG_CONFIG_HOME", jj_config.path());
+    }
+
+    // Create a source repository with two commits.
+    let (source_temp, old_commit_hash) = setup_git_repo()?;
+    let source_root = source_temp.path();
+    let _new_commit_hash = commit_json_via_git(
+        source_root,
+        r#"{"name": "test-api", "version": "1.1.0"}"#,
+    )?;
+
+    // Shallow-clone only the latest commit.
+    let clone_temp =
+        Utf8TempDir::with_prefix("git-stub-materialize-jj-shallow-")?;
+    let clone_root = clone_temp.path();
+
+    let status = git_command()
+        .args([
+            "clone",
+            "--depth=1",
+            &format!("file://{}", source_root),
+            clone_root.as_str(),
+        ])
+        .status()?;
+    assert!(status.success(), "git clone --depth=1 failed");
+
+    // Initialize jj in the shallow clone so VCS detection prefers jj.
+    let status = jj_command()
+        .args(["git", "init", "--git-repo", ".", "."])
+        .current_dir(clone_root)
+        .status()?;
+    assert!(status.success(), "jj git init --git-repo . . failed");
+
+    let git_stub_content = format!("{old_commit_hash}:openapi/api.json\n");
+    let git_stub_path = clone_root.join("openapi").join("api.json.gitstub");
+    write_file(&git_stub_path, &git_stub_content)?;
+
+    let output_dir = clone_root.join("out");
+    fs::create_dir_all(&output_dir)?;
+
+    let result = Materializer::standard(clone_root, &output_dir);
+    assert!(
+        matches!(result, Err(MaterializeError::ShallowClone { .. })),
+        "jj-backed shallow clone should be rejected at construction, got: {result:?}"
+    );
+
+    // SAFETY: nextest runs each test in a separate process.
+    unsafe {
+        std::env::remove_var("XDG_CONFIG_HOME");
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_materialize_idempotent() -> Result<()> {
     let (temp, commit_hash) = setup_git_repo()?;
     let repo_root = temp.path();
@@ -549,6 +618,58 @@ fn test_materialize_idempotent() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_materialize_git_stub_with_jj_dash_prefixed_path() -> Result<()> {
+    if !check_jj_available()? {
+        eprintln!("jj tests skipped (SKIP_JJ_TESTS set)");
+        return Ok(());
+    }
+
+    let (temp, _) = setup_jj_colocated_repo()?;
+    let repo_root = temp.path();
+
+    let dash_path = repo_root.join("-dash.json");
+    write_file(&dash_path, r#"{"name": "dash-file", "version": "1.0.0"}"#)?;
+
+    let status = jj_command()
+        .args(["commit", "-m", "Add dash-prefixed file"])
+        .current_dir(repo_root)
+        .status()?;
+    assert!(status.success(), "jj commit failed");
+
+    let output = jj_command()
+        .args(["log", "-r", "@-", "--no-graph", "-T", "commit_id"])
+        .current_dir(repo_root)
+        .output()?;
+    assert!(
+        output.status.success(),
+        "jj log failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let commit_hash = String::from_utf8(output.stdout)?.trim().to_string();
+
+    let git_stub_content = format!("{commit_hash}:-dash.json\n");
+    let git_stub_path = repo_root.join("dash.json.gitstub");
+    write_file(&git_stub_path, &git_stub_content)?;
+
+    let output_dir = repo_root.join("out");
+    fs::create_dir_all(&output_dir)?;
+
+    let materializer = Materializer::standard(repo_root, &output_dir)?;
+    assert_eq!(materializer.vcs().name(), VcsName::Jj, "should detect jj");
+
+    let result = materializer.materialize("dash.json.gitstub")?;
+    assert!(result.exists(), "materialized file should exist");
+
+    let materialized_content = fs::read_to_string(&result)?;
+    assert_eq!(
+        materialized_content, r#"{"name": "dash-file", "version": "1.0.0"}"#,
+        "materialized content should match original"
+    );
+
+    Ok(())
+}
+
 /// Test that jj non-colocated repos don't trigger shallow clone
 /// detection.
 #[test]
@@ -568,7 +689,7 @@ fn test_jj_non_colocated_not_shallow() -> Result<()> {
     let output_dir = repo_root.join("out");
     fs::create_dir_all(&output_dir)?;
 
-    // This should succeed (jj repos are never shallow).
+    // This should succeed for this non-shallow jj repo.
     let materializer = Materializer::standard(repo_root, &output_dir)?;
     let result = materializer.materialize("openapi/api.json.gitstub");
     assert!(

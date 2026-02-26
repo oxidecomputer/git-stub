@@ -106,6 +106,16 @@ pub enum ShallowCloneError {
         stderr: String,
     },
 
+    /// An I/O error occurred while checking the shallow-clone marker.
+    #[error("I/O error while checking for shallow clone at {path}")]
+    Io {
+        /// The path being checked when the error occurred.
+        path: Utf8PathBuf,
+        /// The underlying I/O error.
+        #[source]
+        source: io::Error,
+    },
+
     /// The VCS command succeeded but returned unexpected output.
     #[error(
         "{vcs_name} returned unexpected output for shallow clone \
