@@ -36,6 +36,7 @@ camino-tempfile.workspace = true
 [package.metadata.release]
 tag-name = "git-stub-vcs-{{version}}"
 pre-release-replacements = [
+    { file="src/lib.rs", search="^#!\\[doc\\(html_root_url = \"https://docs.rs/git-stub-vcs/.*\"\\)\\]$", replace="#![doc(html_root_url = \"https://docs.rs/git-stub-vcs/{{version}}\")]", exactly=1 },
     { file="CHANGELOG.md", search="Unreleased", replace="[{{version}}]", min=1 },
     { file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1 },
     { file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## Unreleased - ReleaseDate\n", exactly=1 },
