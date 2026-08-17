@@ -10,7 +10,7 @@
 <!-- cargo-sync-rdme rustdoc [[ -->
 VCS abstraction and materialization for git stubs.
 
-A [`GitStub`](https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html) (e.g., `foo.json.gitstub`) contains a
+A [`GitStub`][git_stub::GitStub] (e.g., `foo.json.gitstub`) contains a
 reference to a file stored in Git history, in the format `commit:path`. This
 crate provides a VCS abstraction for reading file contents from history, and
 helpers to materialize these references into actual files.
@@ -52,6 +52,8 @@ let spec_path = materializer
     .materialize("openapi/my-api/my-api-1.0.0-abc123.json.gitstub")
     .expect("materialized successfully");
 ````
+
+[git_stub::GitStub]: https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html "struct git_stub::git_stub::GitStub"
 <!-- cargo-sync-rdme ]] -->
 
 ## License

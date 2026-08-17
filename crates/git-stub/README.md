@@ -27,7 +27,7 @@ For more about the motivation and design decisions behind Git stubs, see
 [RFD 634 Git stub files for Dropshot versioned
 APIs](https://rfd.shared.oxide.computer/rfd/0634).
 
-The main entry point is [`GitStub`](https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html).
+The main entry point is [`GitStub`].
 
 ## Examples
 
@@ -66,6 +66,8 @@ assert!(stub2.needs_rewrite());
 For materializing files from version control systems like Git or Jujutsu,
 see [`git-stub-vcs`](https://crates.io/crates/git-stub-vcs) ([source
 tree](https://github.com/oxidecomputer/git-stub/tree/main/crates/git-stub-vcs)).
+
+[`GitStub`]: https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html "struct git_stub::git_stub::GitStub"
 <!-- cargo-sync-rdme ]] -->
 
 ## Testing
