@@ -100,7 +100,7 @@ pub enum ShallowCloneError {
         /// The name of the VCS.
         vcs_name: VcsName,
         /// A human-readable description of the exit status (e.g.,
-        /// "exit code 128" or "killed by signal").
+        /// "exit code: 128" or "signal: 9 (SIGKILL)").
         exit_status: String,
         /// The stderr output from the VCS.
         stderr: String,
@@ -156,7 +156,7 @@ pub enum ReadContentsError {
         /// The stub that was requested.
         stub: GitStub,
         /// A human-readable description of the exit status (e.g.,
-        /// "exit code 128" or "killed by signal").
+        /// "exit code: 128" or "signal: 9 (SIGKILL)").
         exit_status: String,
         /// The stderr output from the VCS.
         stderr: String,
