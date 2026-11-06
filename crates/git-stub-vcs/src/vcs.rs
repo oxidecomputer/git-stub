@@ -8,7 +8,10 @@ use crate::{
 use camino::Utf8Path;
 use fs_err as fs;
 use git_stub::GitStub;
-use std::{fmt, io, process::Command};
+use std::{
+    fmt, io,
+    process::{Command, ExitStatus},
+};
 
 /// Reads a VCS binary path from an environment variable, falling back
 /// to `default` if the variable is unset or empty.
@@ -206,7 +209,7 @@ impl Vcs {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     Err(ShallowCloneError::VcsFailed {
                         vcs_name: VcsName::Git,
-                        exit_status: output.status.to_string(),
+                        exit_status: describe_exit_status(output.status),
                         stderr: stderr.trim().to_string(),
                     })
                 }
@@ -227,7 +230,7 @@ impl Vcs {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     return Err(ShallowCloneError::VcsFailed {
                         vcs_name: VcsName::Jj,
-                        exit_status: output.status.to_string(),
+                        exit_status: describe_exit_status(output.status),
                         stderr: stderr.trim().to_string(),
                     });
                 }
@@ -302,11 +305,32 @@ impl Vcs {
             Err(ReadContentsError::VcsFailed {
                 vcs_name,
                 stub: stub.clone(),
-                exit_status: output.status.to_string(),
+                exit_status: describe_exit_status(output.status),
                 stderr: stderr.trim().to_string(),
             })
         }
     }
+}
+
+/// Describes the exit status as a string.
+#[cfg(unix)]
+fn describe_exit_status(status: ExitStatus) -> String {
+    match status.code() {
+        // Use "exit code" for consistency across Unix and Windows.
+        Some(code) => format!("exit code: {code}"),
+        // If there isn't a code, then a signal killed the process -- signals
+        // don't exist on Windows so we can use the default Display
+        // implementation.
+        None => status.to_string(),
+    }
+}
+
+/// Describes the exit status as a string.
+#[cfg(not(unix))]
+fn describe_exit_status(status: ExitStatus) -> String {
+    // Display is already "exit code: N" here, and prints NTSTATUS crash codes
+    // as hex.
+    status.to_string()
 }
 
 #[cfg(test)]
@@ -495,5 +519,39 @@ mod tests {
         let jj = Vcs::jj().unwrap();
         assert_eq!(jj.name(), VcsName::Jj);
         assert_eq!(jj.name().to_string(), "jj");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_describe_exit_status_unix() {
+        use super::describe_exit_status;
+        use std::{os::unix::process::ExitStatusExt, process::ExitStatus};
+
+        // from_raw takes a wait status -- see
+        // https://doc.rust-lang.org/std/os/unix/process/trait.ExitStatusExt.html#tymethod.from_raw.
+        assert_eq!(
+            describe_exit_status(ExitStatus::from_raw(128 << 8)),
+            "exit code: 128"
+        );
+        assert_eq!(
+            describe_exit_status(ExitStatus::from_raw(9)),
+            "signal: 9 (SIGKILL)"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_describe_exit_status_windows() {
+        use super::describe_exit_status;
+        use std::{os::windows::process::ExitStatusExt, process::ExitStatus};
+
+        assert_eq!(
+            describe_exit_status(ExitStatus::from_raw(128)),
+            "exit code: 128"
+        );
+        assert_eq!(
+            describe_exit_status(ExitStatus::from_raw(0xC000_0005)),
+            "exit code: 0xc0000005"
+        );
     }
 }

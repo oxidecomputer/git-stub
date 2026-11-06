@@ -711,10 +711,10 @@ fn test_read_contents_nonexistent_commit() -> Result<()> {
 
     let vcs = Vcs::git()?;
     let result = vcs.read_git_stub_contents(&stub, repo_root);
-    assert!(
-        matches!(result, Err(ReadContentsError::VcsFailed { .. })),
-        "nonexistent commit should produce VcsFailed, got: {result:?}"
-    );
+    let Err(ReadContentsError::VcsFailed { exit_status, .. }) = result else {
+        panic!("nonexistent commit should produce VcsFailed, got: {result:?}");
+    };
+    assert_eq!(exit_status, "exit code: 128");
 
     Ok(())
 }
