@@ -1,7 +1,7 @@
 // Copyright 2026 Oxide Computer Company
 
 // This line is automatically updated by cargo-release.
-#![doc(html_root_url = "https://docs.rs/git-stub-vcs/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/git-stub-vcs/0.1.1")]
 
 //! VCS abstraction and materialization for git stubs.
 //!

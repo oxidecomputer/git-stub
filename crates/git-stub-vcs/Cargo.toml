@@ -1,6 +1,6 @@
 [package]
 name = "git-stub-vcs"
-version = "0.1.0"
+version = "0.1.1"
 description = "VCS abstraction and materialization for git stubs"
 readme = "README.md"
 documentation = "https://docs.rs/git-stub-vcs"
