@@ -40,6 +40,8 @@ fn main() {
 
 ## Usage outside build scripts
 
+[git_stub::GitStub]: https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html "struct git_stub::git_stub::GitStub"
+
 ````rust,no_run
 use git_stub_vcs::Materializer;
 
@@ -52,8 +54,6 @@ let spec_path = materializer
     .materialize("openapi/my-api/my-api-1.0.0-abc123.json.gitstub")
     .expect("materialized successfully");
 ````
-
-[git_stub::GitStub]: https://docs.rs/git-stub/1.0.0/git_stub/git_stub/struct.GitStub.html "struct git_stub::git_stub::GitStub"
 <!-- cargo-sync-rdme ]] -->
 
 ## License
